@@ -135,11 +135,15 @@ const HelperTab = () => {
   const handleOpenEditHelperModal = (helper) => {
     setEditHelper({ ...helper });
     setShowEditHelperModal(true);
+    setNewPassword('');
   };
+  
   const handleCloseEditHelperModal = () => {
     setEditHelper(null);
     setShowEditHelperModal(false);
+    setNewPassword('');
   };
+  
 
   const handleSaveEditHelperModal = async (e) => {
     e.preventDefault();
@@ -148,35 +152,39 @@ const HelperTab = () => {
       return;
     }
     try {
+      const payload = {
+        uid: editHelper.uid,
+        userId: editHelper.userId,
+        email: editHelper.email,
+        name: editHelper.name,
+        phone: editHelper.phone,
+        helperType: editHelper.helperType,
+      };
+      // ถ้ามี newPassword ที่ไม่ว่างให้เพิ่มไป
+      if (newPassword.trim() !== '') {
+        payload.password = newPassword.trim();
+      }
+  
       const res = await fetch('https://emergency-production-292a.up.railway.app/api/admin-edit-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          uid: editHelper.uid,            // ต้องใช้ editHelper (ไม่ใช่ newHelper)
-          userId: editHelper.userId,
-          email: editHelper.email,
-          password: editHelper.password, 
-          name: editHelper.name,
-          phone: editHelper.phone,
-          helperType: editHelper.helperType,
-          // ถ้าจะให้แก้รหัสผ่านต้องเพิ่ม backend รองรับ
-        }),
+        body: JSON.stringify(payload),
       });
-      
-      
-
+  
       const data = await res.json();
       if (data.success) {
         setShowEditHelperModal(false);
         setEditHelper(null);
+        setNewPassword(''); // reset ช่องรหัสผ่านใหม่
         fetchAllHelpers();
       } else {
-        alert(data.error || 'ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກ');
+        alert(data.error || 'เกิดข้อผิดพลาดในการบันทึก');
       }
     } catch (err) {
-      alert('ການເຊື່ອມ API ລົ້ມເຫຼວ');
+      alert('การเชื่อม API ล้มเหลว');
     }
   };
+  
 
   // Delete Helper Dialog
   const handleAskDeleteHelper = (helper) => {

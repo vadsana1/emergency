@@ -16,7 +16,7 @@ module.exports = (admin) => {
       });
       await admin.firestore().collection('users').doc(userId).set({
         userId, email, name, phone, helperType,
-         password, // ❌ ห้ามเก็บ plain-text password จริงๆ
+        password, // ❌ ห้ามเก็บ plain-text password จริงๆ
         role: 'helper',
         profileImage: '',
         uid: userRecord.uid,
