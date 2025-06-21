@@ -40,9 +40,6 @@ const HelperTab = () => {
   const [showDeleteHelperModal, setShowDeleteHelperModal] = useState(false);
   const [helperToDelete, setHelperToDelete] = useState(null);
 
-  // ฟิลด์สำหรับเปลี่ยนรหัสผ่าน (Reset)
-  const [newPassword, setNewPassword] = useState('');
-
   useEffect(() => {
     fetchAllHelpers();
     fetchTeamOptions();
@@ -104,7 +101,7 @@ const HelperTab = () => {
         setAdding(false);
         return;
       }
-      // เรียก backend API เพื่อสร้าง user
+      // เรียก backend API เพื่อสร้าง user (คุณต้องมี API นี้อยู่แล้ว)
       const res = await fetch('https://emergency-production-292a.up.railway.app/api/admin-create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -140,11 +137,13 @@ const HelperTab = () => {
     setShowEditHelperModal(true);
     setNewPassword('');
   };
+  
   const handleCloseEditHelperModal = () => {
     setEditHelper(null);
     setShowEditHelperModal(false);
     setNewPassword('');
   };
+  
 
   const handleSaveEditHelperModal = async (e) => {
     e.preventDefault();
@@ -159,23 +158,25 @@ const HelperTab = () => {
         email: editHelper.email,
         name: editHelper.name,
         phone: editHelper.phone,
+        password: editHelper.password, // ใช้รหัสผ่านที่แก้ไข
         helperType: editHelper.helperType,
       };
+      // ถ้ามี newPassword ที่ไม่ว่างให้เพิ่มไป
       if (newPassword.trim() !== '') {
         payload.password = newPassword.trim();
       }
-
+  
       const res = await fetch('https://emergency-production-292a.up.railway.app/api/admin-edit-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
+  
       const data = await res.json();
       if (data.success) {
         setShowEditHelperModal(false);
         setEditHelper(null);
-        setNewPassword('');
+        setNewPassword(''); // reset ช่องรหัสผ่านใหม่
         fetchAllHelpers();
       } else {
         alert(data.error || 'เกิดข้อผิดพลาดในการบันทึก');
@@ -184,6 +185,7 @@ const HelperTab = () => {
       alert('การเชื่อม API ล้มเหลว');
     }
   };
+  
 
   // Delete Helper Dialog
   const handleAskDeleteHelper = (helper) => {
@@ -217,6 +219,9 @@ const HelperTab = () => {
       alert('ການເຊື່ອມ API ລົ້ມເຫຼວ');
     }
   };
+
+  // ===== Reset Password =====
+ 
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 relative">
@@ -260,6 +265,7 @@ const HelperTab = () => {
                     <td className="px-4 py-2 border">{helper.email}</td>
                     <td className="px-4 py-2 border">{helper.password}</td>
                     <td className="px-4 py-2 border">{helper.phone}</td>
+                    
                     <td className="px-4 py-2 border">{teamLabel}</td>
                     <td className="relative w-20 h-20">
                       <img
@@ -295,6 +301,7 @@ const HelperTab = () => {
               })}
             </tbody>
           </table>
+          {/* ปุ่ม Load More */}
           {allHelpers.length > visibleRows && (
             <div className="flex justify-center my-4">
               <button
@@ -409,7 +416,14 @@ const HelperTab = () => {
               <div>
                 <label className="block text-gray-700 mb-1">ອີເມວ</label>
                 <input className="border px-3 py-2 rounded w-full" type="email"
-                  value={editHelper.email} readOnly />
+                  value={editHelper.email} readOnly
+                  />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-1">ລະຫັດຜ່ານ</label>
+                <input className="border px-3 py-2 rounded w-full"
+                  value={editHelper.password}
+                  onChange={e => setEditHelper({ ...editHelper, password: e.target.value })} required />
               </div>
               <div>
                 <label className="block text-gray-700 mb-1">ເບີໂທ</label>
@@ -417,6 +431,7 @@ const HelperTab = () => {
                   value={editHelper.phone}
                   onChange={e => setEditHelper({ ...editHelper, phone: e.target.value })} required />
               </div>
+              
               <div>
                 <label className="block text-gray-700 mb-1">ຮູບພາບ</label>
                 {(editHelper?.profileImageUrl || editHelper?.profileImage) ? (
@@ -446,17 +461,6 @@ const HelperTab = () => {
                     </option>
                   ))}
                 </select>
-              </div>
-              {/* ฟิลด์เปลี่ยนรหัสผ่าน */}
-              <div>
-                <label className="block text-gray-700 mb-1">Reset Password</label>
-                <input
-                  className="border px-3 py-2 rounded w-full"
-                  type="password"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  placeholder="เว้นว่างถ้าไม่เปลี่ยน"
-                />
               </div>
               <div className="flex justify-end pt-3">
                 <button type="button"
