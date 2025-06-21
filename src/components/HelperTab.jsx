@@ -4,7 +4,7 @@ import {
   collection, getDocs, query, where
 } from 'firebase/firestore';
 
-// generateUserId ฟังก์ชันเหมือนเดิม
+// ฟังก์ชันสร้าง userId อัตโนมัติ
 const generateUserId = (helpers) => {
   const userIds = helpers
     .map(h => h.userId)
@@ -101,7 +101,6 @@ const HelperTab = () => {
         setAdding(false);
         return;
       }
-      // เรียก backend API เพื่อสร้าง user (คุณต้องมี API นี้อยู่แล้ว)
       const res = await fetch('https://emergency-production-292a.up.railway.app/api/admin-create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -123,10 +122,10 @@ const HelperTab = () => {
         setNewHelper({ name: '', email: '', phone: '', helperType: '', userId: '', password: '' });
         fetchAllHelpers();
       } else {
-        alert(data.error || 'ເກີດຂໍ້ຜິດພາດໃນການເພີ່ມຂໍ້ມູນ');
+        alert(data.error || 'เกิดข้อผิดพลาดในการเพิ่มข้อมูล');
       }
     } catch (err) {
-      alert('ເກີດຂໍ້ຜິດພາດໃນການເຊື່ອມ API');
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ API');
     }
     setAdding(false);
   };
@@ -135,15 +134,12 @@ const HelperTab = () => {
   const handleOpenEditHelperModal = (helper) => {
     setEditHelper({ ...helper });
     setShowEditHelperModal(true);
-    setNewPassword('');
   };
-  
+
   const handleCloseEditHelperModal = () => {
     setEditHelper(null);
     setShowEditHelperModal(false);
-    setNewPassword('');
   };
-  
 
   const handleSaveEditHelperModal = async (e) => {
     e.preventDefault();
@@ -158,25 +154,20 @@ const HelperTab = () => {
         email: editHelper.email,
         name: editHelper.name,
         phone: editHelper.phone,
-        password: editHelper.password, // ใช้รหัสผ่านที่แก้ไข
         helperType: editHelper.helperType,
       };
-      // ถ้ามี newPassword ที่ไม่ว่างให้เพิ่มไป
-      if (newPassword.trim() !== '') {
-        payload.password = newPassword.trim();
+      if (editHelper.password && editHelper.password.trim() !== '') {
+        payload.password = editHelper.password.trim();
       }
-  
       const res = await fetch('https://emergency-production-292a.up.railway.app/api/admin-edit-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-  
       const data = await res.json();
       if (data.success) {
         setShowEditHelperModal(false);
         setEditHelper(null);
-        setNewPassword(''); // reset ช่องรหัสผ่านใหม่
         fetchAllHelpers();
       } else {
         alert(data.error || 'เกิดข้อผิดพลาดในการบันทึก');
@@ -185,7 +176,6 @@ const HelperTab = () => {
       alert('การเชื่อม API ล้มเหลว');
     }
   };
-  
 
   // Delete Helper Dialog
   const handleAskDeleteHelper = (helper) => {
@@ -213,16 +203,14 @@ const HelperTab = () => {
         setHelperToDelete(null);
         fetchAllHelpers();
       } else {
-        alert(data.error || 'ລົບບໍສຳເລັດ');
+        alert(data.error || 'ลบบัญชีไม่สำเร็จ');
       }
     } catch (err) {
-      alert('ການເຊື່ອມ API ລົ້ມເຫຼວ');
+      alert('การเชื่อม API ล้มเหลว');
     }
   };
 
-  // ===== Reset Password =====
- 
-
+  // ===== Render =====
   return (
     <div className="bg-white shadow-md rounded-lg p-6 relative">
       <h2 className="text-2xl font-semibold text-gray-700 mb-4">👥 ທີມຊ່ວຍເຫຼືອທັງຫມົດ</h2>
@@ -265,7 +253,6 @@ const HelperTab = () => {
                     <td className="px-4 py-2 border">{helper.email}</td>
                     <td className="px-4 py-2 border">{helper.password}</td>
                     <td className="px-4 py-2 border">{helper.phone}</td>
-                    
                     <td className="px-4 py-2 border">{teamLabel}</td>
                     <td className="relative w-20 h-20">
                       <img
@@ -301,7 +288,6 @@ const HelperTab = () => {
               })}
             </tbody>
           </table>
-          {/* ปุ่ม Load More */}
           {allHelpers.length > visibleRows && (
             <div className="flex justify-center my-4">
               <button
@@ -416,38 +402,27 @@ const HelperTab = () => {
               <div>
                 <label className="block text-gray-700 mb-1">ອີເມວ</label>
                 <input className="border px-3 py-2 rounded w-full" type="email"
-                  value={editHelper.email} readOnly
-                  />
+                  value={editHelper.email} readOnly />
               </div>
               <div>
                 <label className="block text-gray-700 mb-1">ລະຫັດຜ່ານ</label>
-                <input className="border px-3 py-2 rounded w-full"
-                  value={editHelper.password}
-                  onChange={e => setEditHelper({ ...editHelper, password: e.target.value })} required />
+                <input
+                  className="border px-3 py-2 rounded w-full"
+                  type="text"
+                  value={editHelper.password || ''}
+                  onChange={e => setEditHelper({ ...editHelper, password: e.target.value })}
+                  required
+                />
+                <div className="text-xs text-gray-400 pt-1">
+                  * หากต้องการเปลี่ยนรหัสผ่าน ให้กรอกใหม่<br/>
+                  * หากไม่ต้องการเปลี่ยน ให้เว้นช่องนี้ไว้
+                </div>
               </div>
               <div>
                 <label className="block text-gray-700 mb-1">ເບີໂທ</label>
                 <input className="border px-3 py-2 rounded w-full"
                   value={editHelper.phone}
                   onChange={e => setEditHelper({ ...editHelper, phone: e.target.value })} required />
-              </div>
-              
-              <div>
-                <label className="block text-gray-700 mb-1">ຮູບພາບ</label>
-                {(editHelper?.profileImageUrl || editHelper?.profileImage) ? (
-                  <img
-                    src={editHelper.profileImageUrl || editHelper.profileImage}
-                    alt="profile"
-                    className="w-16 h-16 rounded-full border object-cover"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-full border bg-gray-100 flex items-center justify-center text-gray-400">
-                    -
-                  </div>
-                )}
-                <div className="text-xs text-gray-400 pt-2">
-                  * ຜູ້ໃຊ້ຈະຈັດການຮູບເອງຜ່ານໜ້າແອັບ
-                </div>
               </div>
               <div>
                 <label className="block text-gray-700 mb-1">ປະເພດທີມ</label>
