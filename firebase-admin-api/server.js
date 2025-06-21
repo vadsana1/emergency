@@ -13,8 +13,9 @@ const app = express();
 // 🟢 ใส่ CORS ที่นี่ (ก่อน .use(express.json()) และก่อน .use(routes))
 app.use(cors({
   origin: [
-    "https://emergencyctest.netlify.app", // แก้เป็น domain Netlify ของคุณ
-    "http://localhost:3000"               // สำหรับตอน dev
+  "https://emergencytest.netlify.app",
+  "https://emergency-production-292a.up.railway.app",
+  "http://localhost:3000"          // สำหรับตอน dev
   ],
   credentials: true
 }));
