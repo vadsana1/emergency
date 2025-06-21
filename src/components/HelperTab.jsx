@@ -252,6 +252,7 @@ const HelperTab = () => {
                 <th className="px-4 py-2 border text-left">ຊື່</th>
                 <th className="px-4 py-2 border text-left">ອີເມວ</th>
                 <th className="px-4 py-2 border text-left">ເບີໂທ</th>
+                <th className="px-4 py-2 border text-left">ລະຫັດຜ່ານ</th>
                 <th className="px-4 py-2 border text-left">ປະເພດທີມ</th>
                 <th className="px-4 py-2 border text-left">ຮູບພາບ</th>
                 <th className="px-4 py-2 border text-center">ການດຳເນີນງານ</th>
@@ -268,6 +269,7 @@ const HelperTab = () => {
                     <td className="px-4 py-2 border">{helper.name}</td>
                     <td className="px-4 py-2 border">{helper.email}</td>
                     <td className="px-4 py-2 border">{helper.phone}</td>
+                    <td className="px-4 py-2 border">{helper.password}</td>
                     <td className="px-4 py-2 border">{teamLabel}</td>
                     <td className="relative w-20 h-20">
                       <img
@@ -423,14 +425,20 @@ const HelperTab = () => {
               <div>
                 <label className="block text-gray-700 mb-1">ອີເມວ</label>
                 <input className="border px-3 py-2 rounded w-full" type="email"
-                  value={editHelper.email}
-                  onChange={e => setEditHelper({ ...editHelper, email: e.target.value })} required />
+                  value={editHelper.email} readOnly
+                  />
               </div>
               <div>
                 <label className="block text-gray-700 mb-1">ເບີໂທ</label>
                 <input className="border px-3 py-2 rounded w-full"
                   value={editHelper.phone}
                   onChange={e => setEditHelper({ ...editHelper, phone: e.target.value })} required />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-1">ລະຫັດຜ່ານ</label>
+                <input className="border px-3 py-2 rounded w-full"
+                  value={editHelper.password}
+                  onChange={e => setEditHelper({ ...editHelper, password: e.target.value })} required />
               </div>
               <div>
                 <label className="block text-gray-700 mb-1">ຮູບພາບ</label>
