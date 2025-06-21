@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 module.exports = (admin) => {
-    router.post('/api/admin-edit-user', async (req, res) => {
+    router.post('/admin-edit-user', async (req, res) => {
         const { uid, userId, email, password, name, phone, helperType } = req.body;
         if (!uid || !userId) {
             return res.status(400).json({ error: 'Missing uid or userId' });

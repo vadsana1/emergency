@@ -148,18 +148,19 @@ const HelperTab = () => {
       return;
     }
     try {
-      const res = await fetch('https://emergency-production-292a.up.railway.app/api/admin-edit-user', {
+      const res = await fetch('https://emergency-production-292a.up.railway.app/api/admin-create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          uid: editHelper.uid,
-          userId: editHelper.userId,
-          email: editHelper.email,
-          name: editHelper.name,
-          phone: editHelper.phone,
-          helperType: editHelper.helperType,
+          userId: newHelper.userId,
+          email: newHelper.email,
+          password: newHelper.password,
+          name: newHelper.name,
+          phone: newHelper.phone,
+          helperType: newHelper.helperType,
         }),
       });
+      
 
       const data = await res.json();
       if (data.success) {
