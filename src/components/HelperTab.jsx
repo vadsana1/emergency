@@ -148,18 +148,21 @@ const HelperTab = () => {
       return;
     }
     try {
-      const res = await fetch('https://emergency-production-292a.up.railway.app/api/admin-create-user', {
+      const res = await fetch('https://emergency-production-292a.up.railway.app/api/admin-edit-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: newHelper.userId,
-          email: newHelper.email,
-          password: newHelper.password,
-          name: newHelper.name,
-          phone: newHelper.phone,
-          helperType: newHelper.helperType,
+          uid: editHelper.uid,            // ต้องใช้ editHelper (ไม่ใช่ newHelper)
+          userId: editHelper.userId,
+          email: editHelper.email,
+          password: editHelper.password, 
+          name: editHelper.name,
+          phone: editHelper.phone,
+          helperType: editHelper.helperType,
+          // ถ้าจะให้แก้รหัสผ่านต้องเพิ่ม backend รองรับ
         }),
       });
+      
       
 
       const data = await res.json();
@@ -234,8 +237,8 @@ const HelperTab = () => {
                 <th className="px-4 py-2 border text-left">userId</th>
                 <th className="px-4 py-2 border text-left">ຊື່</th>
                 <th className="px-4 py-2 border text-left">ອີເມວ</th>
-                <th className="px-4 py-2 border text-left">ເບີໂທ</th>
                 <th className="px-4 py-2 border text-left">ລະຫັດຜ່ານ</th>
+                <th className="px-4 py-2 border text-left">ເບີໂທ</th>
                 <th className="px-4 py-2 border text-left">ປະເພດທີມ</th>
                 <th className="px-4 py-2 border text-left">ຮູບພາບ</th>
                 <th className="px-4 py-2 border text-center">ການດຳເນີນງານ</th>
