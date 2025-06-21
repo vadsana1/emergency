@@ -102,7 +102,7 @@ const HelperTab = () => {
         return;
       }
       // เรียก backend API เพื่อสร้าง user (คุณต้องมี API นี้อยู่แล้ว)
-      const res = await fetch('https://emergency-production-292a.up.railway.app/admin-create-user', {
+      const res = await fetch('https://emergency-production-292a.up.railway.app/api/admin-create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -186,7 +186,7 @@ const HelperTab = () => {
   const handleConfirmDeleteHelper = async () => {
     if (!helperToDelete) return;
     try {
-      const res = await fetch('https://emergency-production-292a.up.railway.app/api/delete-user-account', {
+      const res = await fetch('https://emergency-production-292a.up.railway.app/api/delete-user-account',  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
