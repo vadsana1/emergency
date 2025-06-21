@@ -102,7 +102,7 @@ const HelperTab = () => {
         return;
       }
       // เรียก backend API เพื่อสร้าง user (คุณต้องมี API นี้อยู่แล้ว)
-      const res = await fetch('https://emergencyapp-production-45d8.up.railway.app/api/admin-create-user', {
+      const res = await fetch('${process.env.REACT_APP_API_BASE_URL}/admin-create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -148,7 +148,7 @@ const HelperTab = () => {
       return;
     }
     try {
-      const res = await fetch('https://emergencyapp-production-45d8.up.railway.app/api/admin-edit-user', {
+      const res = await fetch('${process.env.REACT_APP_API_BASE_URL}/api/admin-edit-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -186,7 +186,7 @@ const HelperTab = () => {
   const handleConfirmDeleteHelper = async () => {
     if (!helperToDelete) return;
     try {
-      const res = await fetch('https://emergencyapp-production-45d8.up.railway.app/api/delete-user-account', {
+      const res = await fetch('${process.env.REACT_APP_API_BASE_URL}/api/delete-user-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -211,7 +211,7 @@ const HelperTab = () => {
   const handleResetPassword = async (email) => {
     if (!window.confirm(`ต้องการส่งอีเมล reset password ไปที่\n${email} ใช่หรือไม่?`)) return;
     try {
-      const res = await fetch('https://emergencyapp-production-45d8.up.railway.app/api/admin-reset-password', {
+      const res = await fetch('${process.env.REACT_APP_API_BASE_URL}/api/admin-reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
