@@ -209,24 +209,7 @@ const HelperTab = () => {
   };
 
   // ===== Reset Password =====
-  const handleResetPassword = async (email) => {
-    if (!window.confirm(`ต้องการส่งอีเมล reset password ไปที่\n${email} ใช่หรือไม่?`)) return;
-    try {
-      const res = await fetch('https://emergency-production-292a.up.railway.app/api/admin-reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert('ส่งอีเมล reset password สำเร็จแล้ว กรุณาแจ้งทีมช่วยเหลือให้เช็คอีเมล');
-      } else {
-        alert(data.error || 'ส่งอีเมลไม่สำเร็จ');
-      }
-    } catch (err) {
-      alert('เชื่อมต่อ API ไม่สำเร็จ');
-    }
-  };
+ 
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 relative">
@@ -268,8 +251,9 @@ const HelperTab = () => {
                     <td className="px-4 py-2 border">{helper.userId}</td>
                     <td className="px-4 py-2 border">{helper.name}</td>
                     <td className="px-4 py-2 border">{helper.email}</td>
-                    <td className="px-4 py-2 border">{helper.phone}</td>
                     <td className="px-4 py-2 border">{helper.password}</td>
+                    <td className="px-4 py-2 border">{helper.phone}</td>
+                    
                     <td className="px-4 py-2 border">{teamLabel}</td>
                     <td className="relative w-20 h-20">
                       <img
@@ -429,17 +413,18 @@ const HelperTab = () => {
                   />
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">ເບີໂທ</label>
-                <input className="border px-3 py-2 rounded w-full"
-                  value={editHelper.phone}
-                  onChange={e => setEditHelper({ ...editHelper, phone: e.target.value })} required />
-              </div>
-              <div>
                 <label className="block text-gray-700 mb-1">ລະຫັດຜ່ານ</label>
                 <input className="border px-3 py-2 rounded w-full"
                   value={editHelper.password}
                   onChange={e => setEditHelper({ ...editHelper, password: e.target.value })} required />
               </div>
+              <div>
+                <label className="block text-gray-700 mb-1">ເບີໂທ</label>
+                <input className="border px-3 py-2 rounded w-full"
+                  value={editHelper.phone}
+                  onChange={e => setEditHelper({ ...editHelper, phone: e.target.value })} required />
+              </div>
+              
               <div>
                 <label className="block text-gray-700 mb-1">ຮູບພາບ</label>
                 {(editHelper?.profileImageUrl || editHelper?.profileImage) ? (
