@@ -17,8 +17,10 @@ router.post("/send-notification", async (req, res) => {
     if (!userDoc.exists) {
       return res.status(404).json({ error: "User not found" });
     }
-    const { fcmToken } = userDoc.data();
-    if (!fcmToken) {
+    const { fcmToken, fcm_tokens } = userDoc.data();
+    // รองรับทั้งแบบเก่า (fcmToken เดี่ยว) และแบบใหม่ (fcm_tokens array)
+    const token = fcmToken || (Array.isArray(fcm_tokens) && fcm_tokens[0]);
+    if (!token) {
       return res.status(400).json({ error: "No FCM token" });
     }
 
@@ -32,7 +34,7 @@ router.post("/send-notification", async (req, res) => {
         IncidentID: incidentId,
         click_action: "FLUTTER_NOTIFICATION_CLICK",
       },
-      token: fcmToken,
+      token: token,
     };
 
     // ส่ง FCM
@@ -50,7 +52,7 @@ router.post("/send-notification", async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     console.error("FCM/Firestore Error:", err);
-    return res.status(500).json({ error: "Send notification failed" });
+    return res.status(500).json({ error: "Send notification failed", detail: err.message });
   }
 });
 
