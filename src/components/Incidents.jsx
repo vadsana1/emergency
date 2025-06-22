@@ -1,3 +1,4 @@
+// src/pages/IncidentPage.js
 import React, { useEffect, useState, useRef } from 'react';
 import { db } from '../firebase.js';
 import DatePicker from 'react-datepicker';
@@ -9,7 +10,6 @@ import {
   onSnapshot,
   doc,
   deleteDoc,
-  updateDoc,
   query,
   where,
   getDocs,
@@ -24,6 +24,10 @@ const STATUS_OPTIONS = [
   { value: 'completed', label: 'ສິ້ນສຸດ' },
 ];
 
+const INCOMPLETE_STATUS = [
+  'received', 'assigned', 'en_route', 'in_progress'
+];
+
 const ITEMS_PER_PAGE = 10;
 
 const IncidentPage = ({ showPopup, addNotification }) => {
@@ -32,8 +36,7 @@ const IncidentPage = ({ showPopup, addNotification }) => {
   const [incidents, setIncidents] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [incidentTypes, setIncidentTypes] = useState([]);
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({});
+  const [allHelpers, setAllHelpers] = useState([]);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -48,7 +51,63 @@ const IncidentPage = ({ showPopup, addNotification }) => {
   const [deleteId, setDeleteId] = useState(null);
 
   const lastIncidentIdRef = useRef(null);
-  const [selectedAssignment, setSelectedAssignment] = useState(null); 
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
+
+  // --- Modal แจ้งเตือนแบบ 2 dropdown ---
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [incidentToNotify, setIncidentToNotify] = useState(null);
+  const [, setHelperTypes] = useState([]); // unique type เช่น ambulance, rescue, ...
+  const [selectedHelperType, setSelectedHelperType] = useState(''); // type ที่เลือก
+  const [availableHelpers, setAvailableHelpers] = useState([]); // user ตาม type ที่ "ว่าง"
+  const [selectedHelper, setSelectedHelper] = useState(''); // userId ของ user ที่เลือก
+  const [, setAllTeams] = useState([]);
+const [teamTypes, setTeamTypes] = useState([]); // เก็บ array ของ {type, name}
+
+  
+useEffect(() => {
+  const fetchTeams = async () => {
+    const q = collection(db, "helper_teams");
+    const snapshot = await getDocs(q);
+    const teams = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setAllTeams(teams);
+
+    // รวม type ที่ไม่ซ้ำ และใช้ name ตัวแรกที่เจอ
+    const typeNameMap = {};
+    teams.forEach(team => {
+      if (team.type && !typeNameMap[team.type]) {
+        typeNameMap[team.type] = team.name; // เอาชื่อแรกที่เจอ
+      }
+    });
+    // แปลงเป็น array สำหรับ dropdown
+    const uniqueTypes = Object.entries(typeNameMap).map(([type, name]) => ({ type, name }));
+    setTeamTypes(uniqueTypes);
+  };
+  fetchTeams();
+}, []);
+
+
+  // โหลด users ทั้งหมด (role: helper) และ assignments
+  useEffect(() => {
+    const fetchHelpersAndAssignments = async () => {
+      // 1. Users ทั้งหมด (helper)
+      const userQ = query(collection(db, 'users'), where('role', '==', 'helper'));
+      const userSnap = await getDocs(userQ);
+      const helpers = userSnap.docs.map(doc => ({
+        id: doc.data().userId || doc.id,
+        userName: doc.data().userName || doc.data().name || '-',
+        helperType: doc.data().helperType || doc.data().type || '-',
+        ...doc.data(),
+      }));
+      setAllHelpers(helpers);
+
+      // ดึง type ทั้งหมดที่ไม่ซ้ำ
+      setHelperTypes([...new Set(helpers.map(h => h.helperType || '-'))]);
+    };
+    fetchHelpersAndAssignments();
+  }, []);
 
   // โหลด incident_types (ดึงจาก Firestore)
   useEffect(() => {
@@ -60,6 +119,7 @@ const IncidentPage = ({ showPopup, addNotification }) => {
     fetchIncidentTypes();
   }, []);
 
+  // Real-time incidents & assignments
   useEffect(() => {
     const unsubIncidents = onSnapshot(collection(db, 'incidents'), (snapshot) => {
       const items = snapshot.docs.map((doc) => ({
@@ -72,7 +132,7 @@ const IncidentPage = ({ showPopup, addNotification }) => {
         lastIncidentIdRef.current &&
         items[0].id !== lastIncidentIdRef.current
       ) {
-        showPopup("🚨 ມີເຫດການໃໝ່ເຂົ້າລະບົບ!");
+        showPopup && showPopup("🚨 ມີເຫດການໃໝ່ເຂົ້າລະບົບ!");
         if (typeof addNotification === "function") {
           addNotification("🚨 ມີເຫດການໃໝ່ເຂົ້າລະບົບ!", items[0].id);
         }
@@ -97,6 +157,41 @@ const IncidentPage = ({ showPopup, addNotification }) => {
     };
   }, [showPopup, addNotification]);
 
+  // Modal แจ้งเตือน: ฟิลเตอร์ helper "ว่าง" ตาม helperType ที่เลือก
+  useEffect(() => {
+    if (!selectedHelperType) {
+      setAvailableHelpers([]);
+      setSelectedHelper('');
+      return;
+    }
+
+    // 1. หา user ทั้งหมดในกลุ่ม helperType นี้
+    const helpersInType = allHelpers.filter(h => (h.helperType || '-') === selectedHelperType);
+
+    // 2. หา userId ที่ยังมี assignment ที่ยังไม่ completed
+    const busyUserIds = new Set(
+      assignments
+        .filter(a =>
+          a.assignedTeam &&
+          INCOMPLETE_STATUS.includes(a.assignedTeam.status || a.status)
+        )
+        .map(a => a.assignedTeam.userId || a.userId)
+    );
+
+    // 3. filter เฉพาะ user ที่ "ว่าง"
+    const available = helpersInType.filter(h => !busyUserIds.has(h.id));
+    setAvailableHelpers(available);
+    setSelectedHelper('');
+  }, [selectedHelperType, assignments, allHelpers]);
+
+  const handleOpenNotifyModal = (incident) => {
+    setIncidentToNotify(incident);
+    setShowNotifyModal(true);
+    setSelectedHelperType('');
+    setAvailableHelpers([]);
+    setSelectedHelper('');
+  };
+
   const getStatusLabel = (statusValue) => {
     const found = STATUS_OPTIONS.find(opt => opt.value === statusValue);
     return found ? found.label : statusValue || "-";
@@ -115,7 +210,29 @@ const IncidentPage = ({ showPopup, addNotification }) => {
     })),
   ];
 
-  // ฟิลเตอร์
+  // ===== ส่งแจ้งเตือนทีม ====
+  const handleSendNotification = async () => {
+    if (!selectedHelper || !incidentToNotify) return;
+    // const res = await fetch("https://emergency-production-292a.up.railway.app/api/send-notification", {
+    const res = await fetch("http://localhost:8080/api/send-notification", {
+      
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: selectedHelper,
+        incidentId: incidentToNotify.id,
+        message: `มีเหตุ: ${incidentToNotify.type || ""} - ${incidentToNotify.detail || ""}`,
+      }),
+    });
+    if (res.ok) {
+      alert("✅ แจ้งเตือนสำเร็จ");
+      setShowNotifyModal(false);
+    } else {
+      alert("❌ แจ้งเตือนไม่สำเร็จ");
+    }
+  };
+
+  // ========== FILTER ==========
   const filteredIncidents = incidents.filter(i => {
     const matchType = !filterType || i.type === filterType;
     const matchSearch =
@@ -155,12 +272,13 @@ const IncidentPage = ({ showPopup, addNotification }) => {
     return date.toLocaleString();
   };
 
+  // ========== MODAL DETAIL ==========
   const openDetail = async (incident) => {
     setDetailIncident(incident);
     setShowDetailModal(true);
     setAssignedTeamInfo(null);
     setLoadingTeam(true);
-    setSelectedAssignment(null); 
+    setSelectedAssignment(null);
 
     try {
       const q = query(
@@ -170,7 +288,7 @@ const IncidentPage = ({ showPopup, addNotification }) => {
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
         const teamDoc = snapshot.docs[0].data();
-        setSelectedAssignment(teamDoc); 
+        setSelectedAssignment(teamDoc);
         if (teamDoc && teamDoc.assignedTeam) {
           setAssignedTeamInfo(teamDoc.assignedTeam);
         }
@@ -189,20 +307,7 @@ const IncidentPage = ({ showPopup, addNotification }) => {
     setLoadingTeam(false);
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm({});
-  };
-
-  const startEdit = (incident) => {
-    setEditingId(incident.id);
-    setEditForm({
-      userName: incident.userName || '',
-      type: incident.type || '',
-      status: incident.status || '',
-    });
-  };
-
+  // ========== DELETE ==========
   const handleDelete = (id) => {
     setDeleteId(id);
     setShowDeleteDialog(true);
@@ -265,34 +370,13 @@ const IncidentPage = ({ showPopup, addNotification }) => {
     }
     return null;
   };
-  const handleEditSubmit = async (e, incidentId) => {
-    e.preventDefault();
-    try {
-      await updateDoc(doc(db, 'incidents', incidentId), {
-        status: editForm.status,
-      });
-      const q = query(collection(db, 'incident_assignments'), where('incidentId', '==', incidentId));
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        const assignmentDoc = snapshot.docs[0];
-        await updateDoc(doc(db, 'incident_assignments', assignmentDoc.id), {
-          status: editForm.status,
-        });
-      }
-      setEditingId(null);
-      setEditForm({});
-    } catch (error) {
-      console.error('Error updating status:', error);
-    }
-  };
 
+  // ========== RENDER ==========
   return (
     <div className="min-h-screen bg-gray-900 p-2 pt-16 sm:p-6">
-
       <h1 className="text-xl sm:text-3xl font-bold text-white mb-4 sm:mb-8 text-center sm:text-left">
         ເຫດການທີ່ຜ່ານມາ
       </h1>
-
       {/* Filter Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 flex-1">
@@ -343,7 +427,6 @@ const IncidentPage = ({ showPopup, addNotification }) => {
           )}
         </div>
       </div>
-
       {/* Table */}
       <div className="bg-gray-800 rounded-2xl p-2 sm:p-6 shadow-lg overflow-x-auto">
         <table className="min-w-[700px] w-full text-xs sm:text-sm text-gray-300">
@@ -362,80 +445,46 @@ const IncidentPage = ({ showPopup, addNotification }) => {
           <tbody>
             {paginatedIncidents.map((incident, index) => {
               const assignment = assignments.find(a => a.incidentId === incident.id);
-              const assignedName = assignment?.assignedTeam?.userName || '-';
+              let assignedName = assignment?.assignedTeam?.userName || '-';
+              if (!assignedName && assignment?.assignedTeam?.userId && allHelpers.length > 0) {
+                const foundTeam = allHelpers.find(t => t.id === assignment.assignedTeam.userId);
+                if (foundTeam) assignedName = foundTeam.userName;
+              }
               const teamStatus =
                 assignment?.assignedTeam?.status ||
                 assignment?.status ||
                 '-';
               return (
-                editingId === incident.id ? (
-                  <tr key={incident.id} className="bg-gray-700">
-                    <td className="px-2 sm:px-4 py-2">{startIdx + index + 1}</td>
-                    <td className="px-2 sm:px-4 py-2">{incident.id}</td>
-                    <td className="px-2 sm:px-4 py-2">{formatTimestamp(incident.timestamp)}</td>
-                    <td className="px-2 sm:px-4 py-2">{incident.userName}</td>
-                    <td className="px-2 sm:px-4 py-2">{assignedName}</td>
-                    <td className="px-2 sm:px-4 py-2">{incident.type}</td>
-                    <td className="px-2 sm:px-4 py-2">
-                      <select
-                        className="bg-gray-900 border rounded px-2 text-white"
-                        value={editForm.status}
-                        onChange={(e) =>
-                          setEditForm({ ...editForm, status: e.target.value })
-                        }
-                      >
-                        <option value="">-</option>
-                        {STATUS_OPTIONS.filter(s => s.value !== '').map(s => (
-                          <option key={s.value} value={s.value}>{s.label}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-2 sm:px-4 py-2 space-x-2">
-                      <button
-                        className="bg-green-600 text-white px-3 py-1 rounded mb-1 sm:mb-0"
-                        onClick={(e) => handleEditSubmit(e, incident.id)}
-                      >
-                        ບັນທຶກ
-                      </button>
-                      <button
-                        className="bg-gray-500 text-white px-3 py-1 rounded"
-                        onClick={cancelEdit}
-                      >
-                        ຍົກເລີກ
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  <tr key={incident.id} className="hover:bg-gray-700">
-                    <td className="px-2 sm:px-4 py-2">{startIdx + index + 1}</td>
-                    <td className="px-2 sm:px-4 py-2">{incident.id}</td>
-                    <td className="px-2 sm:px-4 py-2">{formatTimestamp(incident.timestamp)}</td>
-                    <td className="px-2 sm:px-4 py-2">{incident.userName || '-'}</td>
-                    <td className="px-2 sm:px-4 py-2">{assignedName}</td>
-                    <td className="px-2 sm:px-4 py-2">{getIncidentTypeLabel(incident.type)}</td>
-                    <td className="px-2 sm:px-4 py-2">{getStatusLabel(teamStatus)}</td>
-                    <td className="px-2 sm:px-4 py-2 space-x-1">
-                      <button
-                        className="bg-blue-600 text-white px-2 py-1 rounded mb-1 sm:mb-0"
-                        onClick={async () => await openDetail(incident)}
-                      >
-                        ເບິ່ງ
-                      </button>
-                      <button
-                        className="bg-yellow-500 text-white px-2 py-1 rounded mb-1 sm:mb-0"
-                        onClick={() => startEdit(incident)}
-                      >
-                        ແກ້ໄຂ
-                      </button>
-                      <button
-                        className="bg-red-600 text-white px-2 py-1 rounded"
-                        onClick={() => handleDelete(incident.id)}
-                      >
-                        ລຶບ
-                      </button>
-                    </td>
-                  </tr>
-                )
+                <tr key={incident.id} className="hover:bg-gray-700">
+                  <td className="px-2 sm:px-4 py-2">{startIdx + index + 1}</td>
+                  <td className="px-2 sm:px-4 py-2">{incident.id}</td>
+                  <td className="px-2 sm:px-4 py-2">{formatTimestamp(incident.timestamp)}</td>
+                  <td className="px-2 sm:px-4 py-2">{incident.userName || '-'}</td>
+                  <td className="px-2 sm:px-4 py-2">{assignedName}</td>
+                  <td className="px-2 sm:px-4 py-2">{getIncidentTypeLabel(incident.type)}</td>
+                  <td className="px-2 sm:px-4 py-2">{getStatusLabel(teamStatus)}</td>
+                  <td className="px-2 sm:px-4 py-2 space-x-1">
+                    <button
+                      className="bg-blue-600 text-white px-2 py-1 rounded mb-1 sm:mb-0"
+                      onClick={async () => await openDetail(incident)}
+                    >
+                      ເບິ່ງ
+                    </button>
+                    {/* ปุ่มแจ้งเตือนทีม */}
+                    <button
+                      className="bg-pink-500 text-white px-2 py-1 rounded mb-1 sm:mb-0"
+                      onClick={() => handleOpenNotifyModal(incident)}
+                    >
+                      ແຈ້ງເຕືອນທີມ
+                    </button>
+                    <button
+                      className="bg-red-600 text-white px-2 py-1 rounded"
+                      onClick={() => handleDelete(incident.id)}
+                    >
+                      ລຶບ
+                    </button>
+                  </td>
+                </tr>
               );
             })}
             {paginatedIncidents.length === 0 && (
@@ -566,6 +615,54 @@ const IncidentPage = ({ showPopup, addNotification }) => {
           </div>
         </div>
       )}
+
+      {/* Modal แจ้งเตือน (2 dropdown: ประเภท/ทีมที่ว่าง) */}
+      {showNotifyModal && (
+  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+    <div className="bg-white rounded-2xl shadow-2xl p-6 w-[90vw] max-w-sm">
+      <h2 className="text-xl font-bold mb-4">ເລືອກประเภททีม ແລະ ຄົນທີ່ຈະແຈ້ງເຕືອນ</h2>
+      <select
+        value={selectedHelperType}
+        onChange={e => setSelectedHelperType(e.target.value)}
+        className="w-full border rounded px-2 py-2 mb-4"
+      >
+        <option value="">-- ເລືອກປະເພດທີມ --</option>
+        {teamTypes.map(({ type, name }) => (
+          <option key={type} value={type}>{name} </option>
+        ))}
+      </select>
+      <select
+        className="w-full border rounded px-2 py-2 mb-4"
+        value={selectedHelper}
+        onChange={e => setSelectedHelper(e.target.value)}
+        disabled={!selectedHelperType}
+      >
+        <option value="">-- ເລືອກຄົນ/ທີມທີ່ວ່າງ --</option>
+        {availableHelpers.map(helper => (
+          <option key={helper.id} value={helper.id}>
+            {helper.userName} 
+          </option>
+        ))}
+      </select>
+      <div className="flex gap-2 justify-end">
+        <button
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+          onClick={handleSendNotification}
+          disabled={!selectedHelper}
+        >
+          ແຈ້ງເຕືອນ
+        </button>
+        <button
+          className="bg-gray-300 text-gray-700 px-4 py-2 rounded"
+          onClick={() => setShowNotifyModal(false)}
+        >
+          ຍົກເລີກ
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };

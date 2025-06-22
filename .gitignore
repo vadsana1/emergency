@@ -2,12 +2,15 @@
 
 # dependencies
 /node_modules
+.node_modules
 /.pnp
 .pnp.js
 .serviceAccountKey.json
 # testing
 /coverage
-
+node_modules/
+.env
+serviceAccountKey.json
 # production
 /build
 
