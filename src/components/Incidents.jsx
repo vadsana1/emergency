@@ -213,8 +213,8 @@ useEffect(() => {
   // ===== ส่งแจ้งเตือนทีม ====
   const handleSendNotification = async () => {
     if (!selectedHelper || !incidentToNotify) return;
-    // const res = await fetch("https://emergency-production-292a.up.railway.app/api/send-notification", {
-    const res = await fetch("http://localhost:8080/api/send-notification", {
+    const res = await fetch("https://emergency-production-292a.up.railway.app/api/send-notification", {
+    
       
       method: "POST",
       headers: { "Content-Type": "application/json" },
