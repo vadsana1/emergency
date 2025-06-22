@@ -27,7 +27,7 @@ router.post("/send-notification", async (req, res) => {
     // สร้าง payload FCM
     const payload = {
       notification: {
-        title: "แจ้งเหตุใหม่",
+        title: "ແຈ້ງເຫດໃໝ່",
         body: message,
       },
       data: {

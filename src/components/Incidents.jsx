@@ -221,14 +221,14 @@ useEffect(() => {
       body: JSON.stringify({
         userId: selectedHelper,
         incidentId: incidentToNotify.id,
-        message: `มีเหตุ: ${incidentToNotify.type || ""} - ${incidentToNotify.detail || ""}`,
+        message: `ມີເຫດການ: ${incidentToNotify.type || ""} - ${incidentToNotify.detail || ""}`,
       }),
     });
     if (res.ok) {
-      alert("✅ แจ้งเตือนสำเร็จ");
+      alert("✅ ແຈ້ງເຕືອນສຳເລັດ");
       setShowNotifyModal(false);
     } else {
-      alert("❌ แจ้งเตือนไม่สำเร็จ");
+      alert("❌ ແຈ້ງເຫດບໍ່ສຳເລັດ");
     }
   };
 
@@ -620,7 +620,7 @@ useEffect(() => {
       {showNotifyModal && (
   <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
     <div className="bg-white rounded-2xl shadow-2xl p-6 w-[90vw] max-w-sm">
-      <h2 className="text-xl font-bold mb-4">ເລືອກประเภททีม ແລະ ຄົນທີ່ຈະແຈ້ງເຕືອນ</h2>
+      <h2 className="text-xl font-bold mb-4">ເລືອກປະເພດທີມ ແລະ ຄົນທີ່ຈະສົ່ງແຈ້ງເຕືອນ</h2>
       <select
         value={selectedHelperType}
         onChange={e => setSelectedHelperType(e.target.value)}
@@ -637,7 +637,7 @@ useEffect(() => {
         onChange={e => setSelectedHelper(e.target.value)}
         disabled={!selectedHelperType}
       >
-        <option value="">-- ເລືອກຄົນ/ທີມທີ່ວ່າງ --</option>
+        <option value="">-- ທີມທີ່ຫວ້າງ --</option>
         {availableHelpers.map(helper => (
           <option key={helper.id} value={helper.id}>
             {helper.userName} 
