@@ -166,7 +166,7 @@ const IncidentTypeTab = () => {
                   required />
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">ຮູບປະເພດ (ไม่บังคับ)</label>
+                <label className="block text-gray-700 mb-1">ຮູບ </label>
                 <input
                   type="file"
                   accept="image/*"
