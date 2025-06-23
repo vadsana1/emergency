@@ -239,7 +239,7 @@ const IncidentTypeTab = () => {
                   onChange={e => setEditIncident({ ...editIncident, name: e.target.value })} required />
               </div>
               <div>
-                <label className="block text-gray-700 mb-1">ຮູບປະເພດ (แก้ไข)</label>
+                <label className="block text-gray-700 mb-1">ຮູບປະເພດ </label>
                 <input
                   type="file"
                   accept="image/*"
