@@ -122,10 +122,10 @@ const HelperTab = () => {
         setNewHelper({ name: '', email: '', phone: '', helperType: '', userId: '', password: '' });
         fetchAllHelpers();
       } else {
-        alert(data.error || 'เกิดข้อผิดพลาดในการเพิ่มข้อมูล');
+        alert(data.error || 'ເກີດຂໍ້ຜິດພາດໃນການເພີ່ມຂໍ້ມູນ');
       }
     } catch (err) {
-      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ API');
+      alert('ເກີດຂໍ້ຜິດພາດໃນການເຊື່ອມ API');
     }
     setAdding(false);
   };
@@ -144,7 +144,7 @@ const HelperTab = () => {
   const handleSaveEditHelperModal = async (e) => {
     e.preventDefault();
     if (!editHelper || !editHelper.uid) {
-      alert('ไม่พบ uid ของผู้ใช้นี้');
+      alert('ບໍ່ພົບuidນີ້');
       return;
     }
     try {
@@ -170,10 +170,10 @@ const HelperTab = () => {
         setEditHelper(null);
         fetchAllHelpers();
       } else {
-        alert(data.error || 'เกิดข้อผิดพลาดในการบันทึก');
+        alert(data.error || 'ເກີດຂໍ້ຜິດພາດໃນການແກ້ໄຂ');
       }
     } catch (err) {
-      alert('การเชื่อม API ล้มเหลว');
+      alert('ການເຊື່ອມ API ລົ້ມເຫລວ');
     }
   };
 
@@ -203,10 +203,10 @@ const HelperTab = () => {
         setHelperToDelete(null);
         fetchAllHelpers();
       } else {
-        alert(data.error || 'ลบบัญชีไม่สำเร็จ');
+        alert(data.error || 'ລົບບັນຊີບໍ່ສຳເລັດ');
       }
     } catch (err) {
-      alert('การเชื่อม API ล้มเหลว');
+      alert('ການເຊື່ອມ API ລົ້ມເຫລວ');
     }
   };
 
@@ -413,10 +413,7 @@ const HelperTab = () => {
                   onChange={e => setEditHelper({ ...editHelper, password: e.target.value })}
                   required
                 />
-                <div className="text-xs text-gray-400 pt-1">
-                  * หากต้องการเปลี่ยนรหัสผ่าน ให้กรอกใหม่<br/>
-                  * หากไม่ต้องการเปลี่ยน ให้เว้นช่องนี้ไว้
-                </div>
+                
               </div>
               <div>
                 <label className="block text-gray-700 mb-1">ເບີໂທ</label>
